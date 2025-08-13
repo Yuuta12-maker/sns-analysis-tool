@@ -10,6 +10,7 @@ load_dotenv()
 
 # Import custom modules
 from twitter_api import TwitterAnalyzer
+from instagram_api import InstagramAnalyzer
 from data_processor import DataProcessor
 
 # Configure logging
@@ -27,6 +28,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 
 # Initialize analyzers
 twitter_analyzer = TwitterAnalyzer()
+instagram_analyzer = InstagramAnalyzer()
 data_processor = DataProcessor()
 
 @app.route('/')
@@ -67,8 +69,24 @@ def analyze():
             )
             
         elif platform == 'instagram':
-            # Instagram implementation would go here
-            return jsonify({'error': 'Instagram analysis not yet implemented'}), 501
+            # Check if we have API access or use demo data
+            if not instagram_analyzer.access_token:
+                logger.info("Using Instagram demo data (no API token configured)")
+                user_data, media_data = instagram_analyzer.generate_demo_data()
+            else:
+                # Get Instagram data
+                user_data = instagram_analyzer.get_user_info()
+                if not user_data:
+                    return jsonify({'error': 'Instagram user not found or API error'}), 404
+                
+                media_data = instagram_analyzer.get_user_media(limit=min(period, 25))
+                if not media_data:
+                    return jsonify({'error': 'No Instagram media found or API error'}), 404
+            
+            # Process data
+            result = data_processor.process_instagram_data(
+                user_data, media_data, analysis_types
+            )
         
         else:
             return jsonify({'error': 'Unsupported platform'}), 400

@@ -5,8 +5,30 @@ let timingChart = null;
 // DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('analysisForm');
+    const platformSelect = document.getElementById('platform');
+    const usernameHelp = document.getElementById('usernameHelp');
+    
     form.addEventListener('submit', handleFormSubmit);
+    platformSelect.addEventListener('change', handlePlatformChange);
 });
+
+// Handle platform selection change
+function handlePlatformChange(event) {
+    const platform = event.target.value;
+    const usernameHelp = document.getElementById('usernameHelp');
+    const usernameInput = document.getElementById('username');
+    
+    if (platform === 'instagram') {
+        usernameHelp.textContent = 'Instagram選択時はデモデータで動作確認できます（APIキー不要）';
+        usernameInput.placeholder = '任意のユーザー名（デモ用）';
+    } else if (platform === 'twitter') {
+        usernameHelp.textContent = 'Twitter API設定が必要です';
+        usernameInput.placeholder = '@を除いたユーザー名';
+    } else {
+        usernameHelp.textContent = '';
+        usernameInput.placeholder = '@を除いたユーザー名';
+    }
+}
 
 // Handle form submission
 async function handleFormSubmit(event) {
