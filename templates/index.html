@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNS分析ツール</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 SNS分析ツール</h1>
+            <p>Twitter/X・Instagram対応のマーケティング分析ツール</p>
+        </header>
+
+        <main>
+            <section class="input-section">
+                <h2>分析設定</h2>
+                <form id="analysisForm">
+                    <div class="form-group">
+                        <label for="platform">分析対象SNS:</label>
+                        <select id="platform" name="platform" required>
+                            <option value="">選択してください</option>
+                            <option value="twitter">Twitter/X</option>
+                            <option value="instagram">Instagram</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="username">アカウント名:</label>
+                        <input type="text" id="username" name="username" placeholder="@を除いたユーザー名" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="period">分析期間:</label>
+                        <select id="period" name="period" required>
+                            <option value="7">過去7日間</option>
+                            <option value="30">過去30日間</option>
+                            <option value="90">過去90日間</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>分析項目:</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="analysis_type" value="engagement" checked> エンゲージメント分析</label>
+                            <label><input type="checkbox" name="analysis_type" value="hashtags"> ハッシュタグ分析</label>
+                            <label><input type="checkbox" name="analysis_type" value="timing"> 投稿時間分析</label>
+                            <label><input type="checkbox" name="analysis_type" value="content"> コンテンツ分析</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">🔍 分析開始</button>
+                </form>
+            </section>
+
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h2>分析結果</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>総投稿数</h3>
+                        <span class="stat-number" id="totalPosts">-</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>平均エンゲージメント率</h3>
+                        <span class="stat-number" id="avgEngagement">-</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>総インプレッション</h3>
+                        <span class="stat-number" id="totalImpressions">-</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>フォロワー数</h3>
+                        <span class="stat-number" id="followerCount">-</span>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <h3>エンゲージメント推移</h3>
+                        <canvas id="engagementChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h3>投稿時間分析</h3>
+                        <canvas id="timingChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="export-section">
+                    <h3>データエクスポート</h3>
+                    <button class="btn-secondary" onclick="exportToCSV()">📄 CSVダウンロード</button>
+                    <button class="btn-secondary" onclick="exportToGoogleSheets()">📊 Google Sheetsに保存</button>
+                </div>
+            </section>
+
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>分析中...</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
