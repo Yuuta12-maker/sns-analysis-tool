@@ -9,9 +9,17 @@ from datetime import datetime
 load_dotenv()
 
 # Import custom modules
-from twitter_api import TwitterAnalyzer
+try:
+    from twitter_api import TwitterAnalyzer
+except ImportError:
+    TwitterAnalyzer = None
+    
 from instagram_api import InstagramAnalyzer
-from data_processor import DataProcessor
+try:
+    from data_processor import DataProcessor
+except ImportError:
+    # Fallback to simple version without pandas
+    from data_processor_simple import DataProcessor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,9 +35,15 @@ CORS(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 
 # Initialize analyzers
-twitter_analyzer = TwitterAnalyzer()
+twitter_analyzer = TwitterAnalyzer() if TwitterAnalyzer else None
 instagram_analyzer = InstagramAnalyzer()
 data_processor = DataProcessor()
+
+# Add tojsonfilter
+from json import dumps
+@app.template_filter('tojsonfilter')
+def tojson_filter(obj):
+    return dumps(obj)
 
 @app.route('/')
 def index():
@@ -54,6 +68,9 @@ def analyze():
         logger.info(f"Starting analysis for {platform}/@{username} for {period} days")
         
         if platform == 'twitter':
+            if not twitter_analyzer:
+                return jsonify({'error': 'Twitter API not available (missing dependencies)'}), 501
+            
             # Get Twitter data
             user_data = twitter_analyzer.get_user_info(username)
             if not user_data:
@@ -92,11 +109,28 @@ def analyze():
             return jsonify({'error': 'Unsupported platform'}), 400
         
         logger.info(f"Analysis completed for {platform}/@{username}")
+        
+        # Check if request wants dashboard view
+        if request.args.get('view') == 'dashboard':
+            return render_template('dashboard.html', 
+                                 analysis_data=result, 
+                                 period=period)
+        
         return jsonify(result)
         
     except Exception as e:
         logger.error(f"Analysis error: {str(e)}")
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
+
+@app.route('/dashboard')
+def dashboard():
+    """Dashboard page"""
+    # For demo purposes, show Instagram demo data
+    user_data, media_data = instagram_analyzer.generate_demo_data()
+    result = data_processor.process_instagram_data(
+        user_data, media_data, ['engagement', 'hashtags', 'timing', 'content']
+    )
+    return render_template('dashboard.html', analysis_data=result, period=7)
 
 @app.route('/api/export/sheets', methods=['POST'])
 def export_to_sheets():

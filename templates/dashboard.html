@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNS分析ダッシュボード</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>SNS分析ダッシュボード</span>
+                </div>
+                <div class="breadcrumb">
+                    <span>すべてのキャンペーン</span>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>{{ analysis_data.platform|title }}分析: {{ analysis_data.username }}</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span>分析者: Guest</span>
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Left Sidebar -->
+            <nav class="sidebar">
+                <div class="nav-section">
+                    <div class="nav-item active">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>概要</span>
+                    </div>
+                    <div class="nav-item">
+                        <i class="fas fa-heart"></i>
+                        <span>エンゲージメント</span>
+                    </div>
+                    <div class="nav-item">
+                        <i class="fas fa-hashtag"></i>
+                        <span>ハッシュタグ</span>
+                    </div>
+                    <div class="nav-item">
+                        <i class="fas fa-clock"></i>
+                        <span>投稿タイミング</span>
+                    </div>
+                    <div class="nav-item">
+                        <i class="fas fa-file-alt"></i>
+                        <span>コンテンツ分析</span>
+                    </div>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-title">設定</div>
+                    <div class="nav-item">
+                        <i class="fas fa-cog"></i>
+                        <span>キャンペーン設定</span>
+                    </div>
+                    <div class="nav-item">
+                        <i class="fas fa-download"></i>
+                        <span>エクスポート</span>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Campaign Header -->
+                <div class="campaign-header">
+                    <div class="campaign-title">
+                        <h1>{{ analysis_data.platform|title }}分析: {{ analysis_data.username }}</h1>
+                        <div class="campaign-status">
+                            <span class="status-badge active">有効</span>
+                            <span class="campaign-type">{{ analysis_data.platform|title }}マーケティング</span>
+                            <span class="location">日本</span>
+                            <span class="period">分析期間: {{ period }}日間</span>
+                        </div>
+                    </div>
+                    <div class="campaign-controls">
+                        <button class="btn-secondary" onclick="refreshData()">
+                            <i class="fas fa-sync"></i> 更新
+                        </button>
+                        <button class="btn-primary" onclick="exportData()">
+                            <i class="fas fa-download"></i> エクスポート
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Metrics Overview -->
+                <div class="metrics-overview">
+                    <div class="metric-card posts">
+                        <div class="metric-header">
+                            <span class="metric-label">投稿数</span>
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="metric-value">{{ analysis_data.stats.total_posts }}</div>
+                        <div class="metric-change positive">+12%</div>
+                    </div>
+                    
+                    <div class="metric-card engagement">
+                        <div class="metric-header">
+                            <span class="metric-label">エンゲージメント数</span>
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="metric-value">{{ (analysis_data.stats.total_likes + analysis_data.stats.total_comments)|int }}</div>
+                        <div class="metric-change positive">+8%</div>
+                    </div>
+                    
+                    <div class="metric-card clicks">
+                        <div class="metric-header">
+                            <span class="metric-label">クリック数</span>
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="metric-value">{{ analysis_data.stats.total_comments }}</div>
+                        <div class="metric-change negative">-3%</div>
+                    </div>
+                    
+                    <div class="metric-card cost">
+                        <div class="metric-header">
+                            <span class="metric-label">コスト効率</span>
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="metric-value">¥{{ (analysis_data.stats.avg_engagement * 10)|int }}</div>
+                        <div class="metric-change positive">-15%</div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <div class="chart-container main-chart">
+                        <div class="chart-header">
+                            <h3>パフォーマンス推移</h3>
+                            <div class="chart-controls">
+                                <select class="chart-selector">
+                                    <option value="engagement">エンゲージメント</option>
+                                    <option value="reach">リーチ</option>
+                                    <option value="impressions">インプレッション</option>
+                                </select>
+                                <button class="chart-btn active" data-period="7d">7日</button>
+                                <button class="chart-btn" data-period="30d">30日</button>
+                                <button class="chart-btn" data-period="90d">90日</button>
+                            </div>
+                        </div>
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container side-chart">
+                        <div class="chart-header">
+                            <h3>投稿時間分析</h3>
+                        </div>
+                        <canvas id="timingChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Data Table -->
+                <div class="data-table-section">
+                    <div class="table-header">
+                        <div class="table-title">
+                            <h3>投稿データ詳細</h3>
+                        </div>
+                        <div class="table-controls">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="投稿を検索" id="searchInput">
+                            </div>
+                            <select class="filter-select" id="statusFilter">
+                                <option value="">ステータス: すべて</option>
+                                <option value="active">配信中</option>
+                                <option value="paused">一時停止</option>
+                            </select>
+                            <button class="table-action-btn">
+                                <i class="fas fa-download"></i> エクスポート
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAll"></th>
+                                    <th>投稿 <i class="fas fa-info-circle"></i></th>
+                                    <th>ステータス</th>
+                                    <th>エンゲージメント <i class="fas fa-info-circle"></i></th>
+                                    <th>いいね数</th>
+                                    <th>コメント数</th>
+                                    <th>投稿日時 <i class="fas fa-info-circle"></i></th>
+                                    <th>効果 <i class="fas fa-info-circle"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="table-pagination">
+                        <div class="pagination-info">
+                            1-10件 / 全20件
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="page-btn" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span class="page-numbers">
+                                <button class="page-btn active">1</button>
+                                <button class="page-btn">2</button>
+                            </span>
+                            <button class="page-btn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        // Pass data to JavaScript
+        window.analysisData = {{ analysis_data | tojsonfilter }};
+    </script>
+</body>
+</html>
